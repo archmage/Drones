@@ -1,4 +1,4 @@
-package com.archmage.drones
+package com.archmage.drones.oo
 
 trait Regional {
   lazy val _region = region

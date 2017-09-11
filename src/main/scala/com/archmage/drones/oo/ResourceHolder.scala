@@ -1,4 +1,4 @@
-package com.archmage.drones
+package com.archmage.drones.oo
 
 trait ResourceHolder {
 	var capacity: Int = _

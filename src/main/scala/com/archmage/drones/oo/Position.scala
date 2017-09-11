@@ -1,4 +1,4 @@
-package com.archmage.drones
+package com.archmage.drones.oo
 
 final class Position(private var _x:Float, private var _y:Float) {
   def x = _x.toInt

@@ -1,4 +1,4 @@
-package com.archmage.drones
+package com.archmage.drones.oo
 
 object Drone extends IdGenerator with ResourceHolder {
 	override def prefix = "d"

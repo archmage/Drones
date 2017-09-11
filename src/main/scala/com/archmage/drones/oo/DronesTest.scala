@@ -1,9 +1,4 @@
-package com.archmage.drones
-
-import com.archmage.commander.Command
-import com.archmage.commander.Commander
-import com.archmage.commander.Menu
-import com.archmage.commander.Helpers
+package com.archmage.drones.oo
 
 object DronesTest {
 	def main(args: Array[String]): Unit = {
