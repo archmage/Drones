@@ -10,4 +10,4 @@ The game's interactions are designed to be standardised through function calls. 
 
 # Status
 
-Drones' progress is currently suspended as of (around) April 2017. It may be unsuspended at some point in the future.
+Drones is currently _in progress_! A rewrite to use functional programming and unit testing is underway.
