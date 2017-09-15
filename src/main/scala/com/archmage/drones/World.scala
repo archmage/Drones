@@ -5,7 +5,7 @@ import com.archmage.drones.components.{Geo, State}
 
 case class World(drones: Seq[Drone], clock: Int = 0) {
 
-  def process(input: String): World = {
+  def process(input: String = ""): World = {
 //    println(input)
 
     // drone movement

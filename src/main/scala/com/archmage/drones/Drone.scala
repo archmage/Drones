@@ -21,15 +21,25 @@ case class Drone(geo: Geo = Geo(),
   def act(world: World): Drone = {
     state.state match {
       case Idle() => idle(world)
-      case Move(x, y) => move(x, y)
+      case Move(x, y) => move(x, y, world)
       case Gather() => gather
     }
   }
 
   def idle(world: World): Drone = Drone(geo, Drone.newState(Gather(), world), scrap)
 
-  def move(x: Int, y: Int): Drone = {
-    Drone(Geo(geo.xpos + geo.xvel, geo.ypos + geo.yvel, geo.xvel, geo.yvel), state, scrap)
+  def move(x: Int, y: Int, world: World): Drone = {
+    state.state match {
+      case Move(x, y) => {
+        val dxvel = -Integer.signum(geo.xpos - x)
+        val dyvel = -Integer.signum(geo.ypos - y)
+        val dxpos = geo.xpos + dxvel
+        val dypos = geo.ypos + dyvel
+        val stop = dxpos == x && dypos == y
+        Drone(Geo(dxpos, dypos, dxvel, dyvel), if(stop) Drone.newState(Idle(), world) else state, scrap)
+      }
+      case _ => this
+    }
   }
 
   def gather: Drone = Drone(geo, state, scrap + 1)
