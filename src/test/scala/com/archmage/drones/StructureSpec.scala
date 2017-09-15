@@ -12,6 +12,6 @@ class StructureSpec extends FlatSpec {
     val structure = Structure(Geo(0, 0), startingScrap)
     var world = World(Seq(Drone(Geo(), State[DroneState](Gather()))), Seq(structure))
     for(_ <- 1 to gatherCount) world = world.process()
-    assert(startingScrap - gatherCount == structure.scrap)
+    assert(world.structures.head.scrap == startingScrap - gatherCount)
   }
 }
