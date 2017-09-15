@@ -3,7 +3,7 @@ package com.archmage.drones
 import com.archmage.drones.Drone.{DroneState, Move}
 import com.archmage.drones.components.{Geo, State}
 
-case class World(drones: Seq[Drone], clock: Int = 0) {
+final case class World(drones: Seq[Drone], structures: Seq[Structure] = Seq(), clock: Int = 0) {
 
   def process(input: String = ""): World = {
 //    println(input)

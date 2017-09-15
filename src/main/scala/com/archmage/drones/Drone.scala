@@ -14,7 +14,7 @@ object Drone {
   }
 }
 
-case class Drone(geo: Geo = Geo(),
+final case class Drone(geo: Geo = Geo(),
                  state: State[DroneState] = State[DroneState](Idle(), 0),
                  scrap: Int = 0) {
 
