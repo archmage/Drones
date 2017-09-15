@@ -4,7 +4,9 @@ lazy val drones = (project in file("."))
     organization := "com.archmage",
     version := "0.1",
     scalaVersion := "2.12.3",
-    libraryDependencies += "com.archmage" % "commander" % "1.2" from
-      "https://github.com/archmage/commander/releases/download/v1.2/commander.jar"
+    logBuffered in Test := false,
+    resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases",
+    libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.1",
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % "test"
   )
 

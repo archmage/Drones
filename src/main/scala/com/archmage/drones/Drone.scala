@@ -1,65 +1,47 @@
 package com.archmage.drones
 
-object Drone extends IdGenerator with ResourceHolder {
-	override def prefix = "d"
-	capacity = 10
+import com.archmage.drones.Drone.{DroneState, Gather, Idle, Move}
+import com.archmage.drones.components.{Geo, State}
+
+object Drone {
+  sealed trait DroneState
+  case class Idle() extends DroneState
+  case class Move(x: Int, y: Int) extends DroneState
+  case class Gather() extends DroneState
+
+  def newState(state: DroneState, world: World): State[DroneState] = {
+    State[state.type](state, world.clock)
+  }
 }
 
-class Drone(argRegion: Region, argX: Int, argY: Int) extends Unique with Regional with ActionQueue with ResourceHolder {
-	val speed = 0.1f
-	val frequency = 200
+case class Drone(geo: Geo = Geo(),
+                 state: State[DroneState] = State[DroneState](Idle(), 0),
+                 scrap: Int = 0) {
 
-	val gatherSpeed = 2000
+  def act(world: World): Drone = {
+    state.state match {
+      case Idle() => idle(world)
+      case Move(x, y) => move(x, y, world)
+      case Gather() => gather
+    }
+  }
 
-	override def region = argRegion
+  def idle(world: World): Drone = Drone(geo, Drone.newState(Gather(), world), scrap)
 
-	val pos = new Position(argX, argY)
+  def move(x: Int, y: Int, world: World): Drone = {
+    state.state match {
+      case Move(x, y) => {
+        val dxvel = -Integer.signum(geo.xpos - x)
+        val dyvel = -Integer.signum(geo.ypos - y)
+        val dxpos = geo.xpos + dxvel
+        val dypos = geo.ypos + dyvel
+        val stop = dxpos == x && dypos == y
+        Drone(Geo(dxpos, dypos, dxvel, dyvel), if(stop) Drone.newState(Idle(), world) else state, scrap)
+      }
+      case _ => this
+    }
+  }
 
-	generator = Drone
-	println("Drone \"" + id + "\" created at " + pos.toString())
-
-	capacity = Drone.capacity
-	resource = 0
-
-	def navigate(locX: Int, locY: Int) {
-		enqueue(() => {
-			travel(locX, locY, speed)
-		})
-	}
-
-	def gather {
-		val thisDrone = this
-		enqueue(() => {
-			if (capacity <= resource) {
-				println("Already at max resource capacity.")
-				return
-			}
-			val Location = region.getLocation(pos.x, pos.y)
-			if (Location != null) {
-				val resourcePoint = Location.asInstanceOf[ResourcePoint]
-				while (resourcePoint.resource > 0 && resource < capacity) {
-					Thread.sleep(gatherSpeed)
-					val gatherAmount = Location.asInstanceOf[ResourcePoint].gather(thisDrone)
-					println("Gathered " + resource + "/" + capacity + " resources from " +
-						pos.toString() + " (remaining: " + resourcePoint.resource + ")")
-				}
-				println("Finished gathering resources.")
-			} else println("Nothing to gather at " + pos.toString())
-		})
-	}
-
-	private def travel(locX: Int, locY: Int, speed: Float) {
-		while (pos.x != locX || pos.y != locY) {
-			val xCache = pos.x
-			val yCache = pos.y
-			val dx = if (math.abs(locX - pos.x) < speed) locX - pos.x else speed * math.signum(locX - pos.x)
-			val dy = if (math.abs(locY - pos.y) < speed) locY - pos.y else speed * math.signum(locY - pos.y)
-			pos.move(dx, dy)
-			if (xCache != pos.x || yCache != pos.y) {
-				if (pos.x != locX || pos.y != locY) println(id + " enters " + pos.toString)
-			}
-			Thread.sleep(frequency)
-		}
-		println(id + " arrives at " + pos.toString)
-	}
+  def gather: Drone = Drone(geo, state, scrap + 1)
 }
+
