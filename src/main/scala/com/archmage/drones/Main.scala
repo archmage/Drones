@@ -1,8 +1,8 @@
-package com.archmage.drones.functional
+package com.archmage.drones
 
 object Main extends App {
 
-  def main(state: WorldState): WorldState = {
+  def main(state: World): World = {
     // get user input
 //    val input = StdIn.readLine("> ")
     val input = ""
@@ -17,5 +17,5 @@ object Main extends App {
     main(newState)
   }
 
-  main(WorldState.make)
+  main(World.make)
 }
