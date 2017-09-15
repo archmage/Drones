@@ -10,13 +10,13 @@ final case class World(drones: Seq[Drone], structures: Seq[Structure] = Seq(), c
 
     // drone movement
     val newDrones = drones.map((d) => d.act(this))
-    World(newDrones, clock + 1)
+    World(newDrones, structures, clock + 1)
   }
 }
 
 object World {
   def make: World = {
     val drone1 = Drone(Geo(0, 0, 1, 0), State[DroneState](Move(600, 0), 0), 0)
-    World(Seq(drone1))
+    World(Seq(drone1), Seq(Structure(Geo(10, 10))))
   }
 }
