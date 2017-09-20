@@ -53,6 +53,17 @@ class DroneSpec extends FlatSpec {
     assert((drone1.scrap, drone2.scrap) == (startingScrap / 2 + 1, startingScrap / 2))
   }
 
+  "A large number of drones gathering the same structure" should "salvage the correct amount of scrap" in {
+    val startingScrap = 7
+    val drones = List.fill(20)(Drone(Geo(), State[DroneState](Gather())))
+    val structure = Structure(Geo(), startingScrap)
+    var world = World(drones, Seq(structure))
+    world = world.process()
+    val dronesWithScrap = world.drones.count((d) => d.scrap > 0)
+    val dronesWithoutScrap = world.drones.count((d) => d.scrap <= 0)
+    assert((dronesWithScrap, dronesWithoutScrap) == (startingScrap, drones.length - startingScrap))
+  }
+
   "A drone that fails to gather" should "become idle" in {
     val drone = Drone(Geo(), State[DroneState](Gather()))
     var world = World(Seq(drone)) // drone will fail to gather due to no structure present
