@@ -47,7 +47,7 @@ class DroneSpec extends FlatSpec {
     val drone = Drone(Geo(), State[DroneState](Gather()))
     val structure = Structure(Geo(), startingScrap)
     var world = World(Seq(drone, drone), Seq(structure))
-    for(_ <- 1 to startingScrap / 2) world = world.process()
+    for(_ <- 0 to startingScrap / 2) world = world.process()
     val drone1 = world.drones(0)
     val drone2 = world.drones(1)
     assert((drone1.scrap, drone2.scrap) == (startingScrap / 2 + 1, startingScrap / 2))

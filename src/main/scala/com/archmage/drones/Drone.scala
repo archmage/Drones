@@ -22,7 +22,7 @@ final case class Drone(geo: Geo = Geo(),
     state.state match {
       case Idle() => idle()
       case Move(x, y) => move(x, y, world)
-      case Gather() => gather(world)
+      case Gather() => validateGather(world)
     }
   }
 
@@ -42,15 +42,17 @@ final case class Drone(geo: Geo = Geo(),
     }
   }
 
-  // TODO check total structure scrap and other gathering drones
-  def gather(world: World): Drone = {
-    val structures = world.structures.filter(s => {
-      s.geo.xpos == geo.xpos && s.geo.ypos == geo.ypos
-    })
+  def validateGather(world: World): Drone = {
+    val structures = world.structures.filter(s => s.geo == Geo(geo.xpos, geo.ypos))
     if(structures.isEmpty || structures.head.scrap <= 0) {
       Drone(geo, Drone.newState(Idle(), world), scrap)
     }
-    else Drone(geo, state, scrap + 1)
+    else this
+  }
+
+  // used by World.gather
+  def gather(world: World, done: Boolean): Drone = {
+    Drone(geo, if(done) Drone.newState(Idle(), world) else state, scrap + 1)
   }
 }
 
