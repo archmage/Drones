@@ -20,13 +20,13 @@ final case class Drone(geo: Geo = Geo(),
 
   def act(world: World): Drone = {
     state.state match {
-      case Idle() => idle(world)
+      case Idle() => idle()
       case Move(x, y) => move(x, y, world)
       case Gather() => gather(world)
     }
   }
 
-  def idle(world: World): Drone = this
+  def idle(): Drone = this
 
   def move(x: Int, y: Int, world: World): Drone = {
     state.state match {
