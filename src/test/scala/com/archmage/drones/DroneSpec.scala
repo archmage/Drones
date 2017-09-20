@@ -11,8 +11,7 @@ class DroneSpec extends FlatSpec {
     assert(world.drones.head.geo == Geo())
   }
 
-  "A drone with a move target" should "move to that target at a rate of up to 1 horizontal" +
-    " and one vertical space per turn" in {
+  "A drone with a move target" should "move to that target at a rate of up to 1 per axis per turn" in {
     val target = Geo(10, 10)
     val drone = Drone(Geo(), State[DroneState](Move(target.xpos, target.ypos)))
     var world = World(Seq(drone))
