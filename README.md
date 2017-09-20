@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/archmage/drones.svg?branch=dev)](https://travis-ci.org/archmage/drones)
+[![Build Status](https://travis-ci.org/archmage/drones.svg?branch=master)](https://travis-ci.org/archmage/drones)
 
 # Drones
 
