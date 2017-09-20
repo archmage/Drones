@@ -1,4 +1,4 @@
-# Drones [![Build Status](https://travis-ci.org/archmage/drones.svg?branch=master)](https://travis-ci.org/archmage/drones)
+# Drones [![GitHub version](https://badge.fury.io/gh/archmage%2Fdrones.svg)](https://badge.fury.io/gh/archmage%2Fdrones) [![Build Status](https://travis-ci.org/archmage/drones.svg?branch=master)](https://travis-ci.org/archmage/drones)
 
 Drones is a small and simple game: the premise is that you are a lone survivor on some desolate planet. At your disposal are a handful of multi-purpose drones; you must use them to traverse the inhospitable landscape, search for resources, construct bases, dispose of local hostiles, and eventually find a way off the planet.
 
