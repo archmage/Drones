@@ -12,22 +12,50 @@ final case class World(drones: Seq[Drone] = Seq(),
     // drone processing
     val newDrones = drones.map((d) => d.act(this))
 
-    // gather
-    val postGatherWorld = World(newDrones, structures, clock).gather
+    World(newDrones, structures, clock).gather.explodeDrones.incrementClock
+  }
 
+  // drones explode
+  def explodeDrones: World = {
+    // separate drones into two groups!
+    val (explodingDrones, otherDrones) = drones.partition((d) => d.isAboutToExplode(this))
 
-    postGatherWorld.incrementClock
+    if(explodingDrones.isEmpty) return this
+
+    // get the coordinates of each exploding location
+    val locations = explodingDrones.map((d) => d.geo.novel).distinct
+    // get relevant / irrelevant structures
+    val (nearbyStructures, otherStructures) = structures.partition((s) => locations.contains(s.geo))
+
+    // group drones / structures by location
+    val explodeGroups = locations.map((l) => {
+      (explodingDrones.filter((d) => d.geo.novel == l),
+        nearbyStructures.find((s) => s.geo == l).getOrElse(Structure(l)))
+    })
+
+    // explode!
+    val resultingStructures = explodeGroups.map((g) => {
+      // calculate total of scrap held by exploding drones
+      val scrapSum = g._1.foldLeft(0) { (z, i) => z + i.scrap }
+      Structure(g._2.geo, g._2.scrap + scrapSum + g._1.length * Drone.explosionRemainder)
+    })
+
+    // and the resulting world...
+    World(otherDrones, resultingStructures ++ otherStructures, clock)
   }
 
   // this will break HARD if two structures are in the same place, so...
   // don't do that, I guess!
   def gather: World = {
-    // get all drones that are gathering
-    val gatherDrones = drones.filter((d) => d.state.state == Drone.Gather())
-    // get the coordinates of each location they are gathering from
+    // partition gathering / nongathering drones
+    val (gatherDrones, otherDrones) = drones.partition((d) => d.state.state == Drone.Gather())
+
+    if(gatherDrones.isEmpty) return this
+
+    // get the coordinates of each gathering location
     val locations = gatherDrones.map((d) => Geo(d.geo.xpos, d.geo.ypos)).distinct
-    // get all relevant structures
-    val gatherStructures = structures.filter((s) => locations.contains(s.geo))
+    // get all gathered / nongathered structures
+    val (gatherStructures, otherStructures) = structures.partition((s) => locations.contains(s.geo))
     // pair each set of drones and each structure in tuples
     val gatherGroups = gatherStructures.map((s) => (gatherDrones.filter((d) => d.geo == s.geo), s))
     // for each pair, gather appropriately!
@@ -44,7 +72,7 @@ final case class World(drones: Seq[Drone] = Seq(),
         val luckyDrones = g._1.slice(0, luckyDroneCount)
 
         (luckyDrones.map((d) => d.gather(this, true)) ++ g._1.slice(luckyDroneCount, g._1.length),
-          Structure(g._2.geo, 0))
+          Structure(g._2.geo))
       }
     })
 
@@ -52,8 +80,8 @@ final case class World(drones: Seq[Drone] = Seq(),
     val processedDrones = processedGroups.flatMap((g) => g._1)
     val processedStructures = processedGroups.map((g) => g._2)
 
-    val allDrones = processedDrones ++ drones.filterNot((d) => d.state.state == Drone.Gather())
-    val allStructures = processedStructures ++ structures.filterNot((s) => locations.contains(s.geo))
+    val allDrones = processedDrones ++ otherDrones
+    val allStructures = processedStructures ++ otherStructures
 
     // and return a new world!
     World(allDrones, allStructures, clock)
