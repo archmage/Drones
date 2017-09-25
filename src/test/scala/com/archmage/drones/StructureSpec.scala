@@ -14,4 +14,10 @@ class StructureSpec extends FlatSpec {
     for(_ <- 1 to gatherCount) world = world.process()
     assert(world.structures.head.scrap == startingScrap - gatherCount)
   }
+
+  "A scrapless structure being gathered" should "not drop below zero scrap" in {
+    var world = World(Seq(Drone(Geo(), State[DroneState](Gather()))), Seq(Structure()))
+    world = world.process()
+    assert(world.structures.head.scrap == 0)
+  }
 }
