@@ -1,6 +1,6 @@
 package com.archmage.drones
 
-import com.archmage.drones.Drone.{DroneState, Gather, Idle, Move}
+import com.archmage.drones.Drone._
 import com.archmage.drones.components.{Geo, State}
 import org.scalatest.FlatSpec
 
@@ -68,5 +68,50 @@ class DroneSpec extends FlatSpec {
     var world = World(Seq(drone)) // drone will fail to gather due to no structure present
     world = world.process()
     assert(world.drones.head.state.state == Idle())
+  }
+
+  "An imminently self-destructing drone" should "properly report its imminint destruction" in {
+    val drone = Drone(Geo(), State[DroneState](SelfDestruct()))
+    var world = World(Seq(drone))
+    for(_ <- 1 to Drone.explosionTime) world = world.process()
+    assert(world.drones.headOption.isDefined && world.drones.head.isAboutToExplode(world))
+  }
+
+  "A self-destructed drone" should "be removed from the world's drone list" in {
+    val drone = Drone(Geo(), State[DroneState](SelfDestruct()))
+    var world = World(Seq(drone))
+    for(_ <- 1 to Drone.explosionTime + 1) world = world.process()
+    assert(world.drones.isEmpty)
+  }
+
+  "A self-destructing drone" should "increase its local structure's scrap count" in {
+    val drone = Drone(Geo(), State[DroneState](SelfDestruct()))
+    var structure = Structure(Geo())
+    var world = World(Seq(drone), Seq(structure))
+    for(_ <- 1 to Drone.explosionTime + 1) world = world.process()
+    assert(world.structures.head.scrap == Drone.explosionRemainder)
+  }
+
+  "A self-destructed drone without a structure" should "create a structure with scrap at its location" in {
+    val drone = Drone(Geo(), State[DroneState](SelfDestruct()))
+    var world = World(Seq(drone))
+    for(_ <- 1 to Drone.explosionTime + 1) world = world.process()
+    assert(world.structures.head == Structure(drone.geo.novel, Drone.explosionRemainder))
+  }
+
+  "A self-destructing drone carrying scrap" should "add its scrap to its structure" in {
+    val drone = Drone(Geo(), State[DroneState](SelfDestruct()), 20)
+    val structure = Structure(Geo(), 10)
+    var world = World(Seq(drone), Seq(structure))
+    for(_ <- 1 to Drone.explosionTime + 1) world = world.process()
+    assert(world.structures.head.scrap == drone.scrap + structure.scrap + Drone.explosionRemainder)
+  }
+
+  "Many self-destructing drones" should "each contribute to a structure's scrap" in {
+    val drones = List.fill(20)(Drone(Geo(), State[DroneState](SelfDestruct())))
+    val structure = Structure(Geo())
+    var world = World(drones, Seq(structure))
+    for(_ <- 1 to Drone.explosionTime + 1) world = world.process()
+    assert(world.structures.head.scrap == Drone.explosionRemainder * drones.length)
   }
 }
