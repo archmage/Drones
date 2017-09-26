@@ -4,6 +4,8 @@ import com.archmage.drones.Drone._
 import com.archmage.drones.components.{Geo, State}
 import org.scalatest.FlatSpec
 
+import scala.collection.immutable.Queue
+
 class DroneSpec extends FlatSpec {
 
   "An idle drone" should "stay at its location after idling for a turn" in {
@@ -100,7 +102,7 @@ class DroneSpec extends FlatSpec {
   }
 
   "A self-destructing drone carrying scrap" should "add its scrap to its structure" in {
-    val drone = Drone(Geo(), State[DroneState](SelfDestruct()), 20)
+    val drone = Drone(Geo(), State[DroneState](SelfDestruct()), Queue(), 20)
     val structure = Structure(Geo(), 10)
     var world = World(Seq(drone), Seq(structure))
     for(_ <- 1 to Drone.explosionTime + 1) world = world.process()
