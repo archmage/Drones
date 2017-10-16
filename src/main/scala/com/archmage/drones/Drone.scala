@@ -6,9 +6,9 @@ import com.archmage.drones.components.{Geo, State}
 import scala.collection.immutable.Queue
 
 object Drone {
-  val cost = 50
-  val explosionRemainder = cost / 2
-  val explosionTime = 3
+  val cost: Int = 50
+  val explosionRemainder: Int = cost / 2
+  val explosionTime: Int = 3
 
   sealed trait DroneState
   case class Idle() extends DroneState
@@ -34,9 +34,10 @@ final case class Drone(geo: Geo = Geo(),
         // act on the new action!
         Drone(geo, newState(nextAction._1, world), nextAction._2).act(world)
       }
+      else this
     }
 
-    state.state match {
+    else state.state match {
       case Idle() => this
       case Move(_, _) => move(world)
       case Gather() => validateGather(world)
@@ -45,19 +46,19 @@ final case class Drone(geo: Geo = Geo(),
   }
 
   def enqueue(state: DroneState): Drone = {
-    Drone(geo, this.state, queue.enqueue(state), scrap)
+    if(state == Idle()) this
+    else Drone(geo, this.state, queue.enqueue(state), scrap)
   }
 
   def move(world: World): Drone = {
     state.state match {
-      case Move(x, y) => {
+      case Move(x, y) =>
         val dxvel = -Integer.signum(geo.xpos - x)
         val dyvel = -Integer.signum(geo.ypos - y)
         val dxpos = geo.xpos + dxvel
         val dypos = geo.ypos + dyvel
         val stop = dxpos == x && dypos == y
         Drone(Geo(dxpos, dypos, dxvel, dyvel), if(stop) Drone.newState(Idle(), world) else state, queue, scrap)
-      }
       case _ => this
     }
   }

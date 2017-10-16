@@ -13,6 +13,12 @@ class DroneSpec extends FlatSpec {
     assert(world.drones.head.geo == Geo())
   }
 
+  "A idle drone that has move() called on it" should "do nothing" in {
+    val world = World(Seq(Drone()))
+    val droneAfterMove = world.drones.head.move(world)
+    assert(world.drones.head == droneAfterMove)
+  }
+
   "A drone with a move target" should "move to that target at a rate of up to 1 per axis per turn" in {
     val target = Geo(10, 10)
     val drone = Drone(Geo(), State[DroneState](Move(target.xpos, target.ypos)))
@@ -49,7 +55,7 @@ class DroneSpec extends FlatSpec {
     val structure = Structure(Geo(), startingScrap)
     var world = World(Seq(drone, drone), Seq(structure))
     for(_ <- 0 to startingScrap / 2) world = world.process()
-    val drone1 = world.drones(0)
+    val drone1 = world.drones.head
     val drone2 = world.drones(1)
     assert((drone1.scrap, drone2.scrap) == (startingScrap / 2 + 1, startingScrap / 2))
   }
@@ -76,7 +82,7 @@ class DroneSpec extends FlatSpec {
     val drone = Drone(Geo(), State[DroneState](SelfDestruct()))
     var world = World(Seq(drone))
     for(_ <- 1 to Drone.explosionTime) world = world.process()
-    assert(world.drones.headOption.isDefined && world.drones.head.isAboutToExplode(world))
+    assert(world.drones.nonEmpty && world.drones.head.isAboutToExplode(world))
   }
 
   "A self-destructed drone" should "be removed from the world's drone list" in {
@@ -88,7 +94,7 @@ class DroneSpec extends FlatSpec {
 
   "A self-destructing drone" should "increase its local structure's scrap count" in {
     val drone = Drone(Geo(), State[DroneState](SelfDestruct()))
-    var structure = Structure(Geo())
+    val structure = Structure(Geo())
     var world = World(Seq(drone), Seq(structure))
     for(_ <- 1 to Drone.explosionTime + 1) world = world.process()
     assert(world.structures.head.scrap == Drone.explosionRemainder)
@@ -115,5 +121,24 @@ class DroneSpec extends FlatSpec {
     var world = World(drones, Seq(structure))
     for(_ <- 1 to Drone.explosionTime + 1) world = world.process()
     assert(world.structures.head.scrap == Drone.explosionRemainder * drones.length)
+  }
+
+  "A drone that enqueues a non-idle action" should "add that action to its action queue" in {
+    val drone = Drone()
+    val droneAfterEnqueue = drone.enqueue(Move(10, 10))
+    assert(droneAfterEnqueue.queue.length - drone.queue.length == 1)
+  }
+
+  "A drone that enqueues an idle action" should "not add that action to its queue" in {
+    val drone = Drone()
+    val droneAfterEnqueue = drone.enqueue(Idle())
+    assert(droneAfterEnqueue.queue.length - drone.queue.length == 0)
+  }
+
+  "An idle drone that enqueues a non-idle action" should "perform that action" in {
+    val stateToEnqueue = Move(10, 10)
+    val drone = Drone(Geo(), State(Idle()), Queue(stateToEnqueue))
+    val world = World(Seq(drone)).process()
+    assert(world.drones.head.state.state == stateToEnqueue)
   }
 }
