@@ -5,22 +5,6 @@ import com.archmage.drones.components.{Geo, State}
 
 import scala.collection.immutable.Queue
 
-object Drone {
-  val cost: Int = 50
-  val explosionRemainder: Int = cost / 2
-  val explosionTime: Int = 3
-
-  sealed trait DroneState
-  case class Idle() extends DroneState
-  case class Move(x: Int, y: Int) extends DroneState
-  case class Gather() extends DroneState
-  case class SelfDestruct() extends DroneState
-
-  def newState(state: DroneState, world: World): State[DroneState] = {
-    State[state.type](state, world.clock)
-  }
-}
-
 final case class Drone(geo: Geo = Geo(),
                  state: State[DroneState] = State[DroneState](Idle(), 0),
                  queue: Queue[DroneState] = Queue(),
@@ -81,3 +65,18 @@ final case class Drone(geo: Geo = Geo(),
   }
 }
 
+object Drone {
+  val cost: Int = 50
+  val explosionRemainder: Int = cost / 2
+  val explosionTime: Int = 3
+
+  sealed trait DroneState
+  case class Idle() extends DroneState
+  case class Move(x: Int, y: Int) extends DroneState
+  case class Gather() extends DroneState
+  case class SelfDestruct() extends DroneState
+
+  def newState(state: DroneState, world: World): State[DroneState] = {
+    State[state.type](state, world.clock)
+  }
+}
