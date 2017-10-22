@@ -6,9 +6,9 @@ import com.archmage.drones.components.{Geo, State}
 import scala.collection.immutable.Queue
 
 final case class Drone(geo: Geo = Geo(),
-                 state: State[DroneState] = State[DroneState](Idle(), 0),
-                 queue: Queue[DroneState] = Queue(),
-                 scrap: Int = 0) {
+                       state: State[DroneState] = State[DroneState](Idle()),
+                       queue: Queue[DroneState] = Queue(),
+                       scrap: Int = 0) {
 
   def act(world: World): Drone = {
     // check queue if idle
@@ -34,7 +34,7 @@ final case class Drone(geo: Geo = Geo(),
     else Drone(geo, this.state, queue.enqueue(state), scrap)
   }
 
-  def move(world: World): Drone = {
+  private def move(world: World): Drone = {
     state.state match {
       case Move(x, y) =>
         val dxvel = -Integer.signum(geo.xpos - x)

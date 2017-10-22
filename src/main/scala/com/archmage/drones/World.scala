@@ -8,12 +8,16 @@ final case class World(drones: Seq[Drone] = Seq(),
 
   def process(input: String = ""): World = {
     // process input
+    // on "stop", stop all drones
+
 
     // drone processing
     val newDrones = drones.map((d) => d.act(this))
 
     World(newDrones, structures, clock).gather.explodeDrones.incrementClock
   }
+
+  def incrementClock: World = World(drones, structures, clock + 1)
 
   // drones explode
   def explodeDrones: World = {
@@ -87,5 +91,9 @@ final case class World(drones: Seq[Drone] = Seq(),
     World(allDrones, allStructures, clock)
   }
 
-  def incrementClock: World = World(drones, structures, clock + 1)
+  // query behaviours
+  def blocked(x: Int, y: Int): Boolean = {
+    // TODO implement geometry
+    false
+  }
 }

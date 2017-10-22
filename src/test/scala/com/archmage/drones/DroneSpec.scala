@@ -9,14 +9,9 @@ import scala.collection.immutable.Queue
 class DroneSpec extends FlatSpec {
 
   "An idle drone" should "stay at its location after idling for a turn" in {
-    val world = World(Seq(Drone())).process()
-    assert(world.drones.head.geo == Geo())
-  }
-
-  "A idle drone that has move() called on it" should "do nothing" in {
     val world = World(Seq(Drone()))
-    val droneAfterMove = world.drones.head.move(world)
-    assert(world.drones.head == droneAfterMove)
+    val processedWorld = world.process()
+    assert(processedWorld.drones.head.geo == world.drones.head.geo)
   }
 
   "A drone with a move target" should "move to that target at a rate of up to 1 per axis per turn" in {
