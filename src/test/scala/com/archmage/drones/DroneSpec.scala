@@ -8,6 +8,8 @@ import scala.collection.immutable.Queue
 
 class DroneSpec extends FlatSpec {
 
+  // -- move --
+
   "An idle drone" should "stay at its location after idling for a turn" in {
     val world = World(Seq(Drone()))
     val processedWorld = world.process()
@@ -34,6 +36,8 @@ class DroneSpec extends FlatSpec {
   }
 
   // TODO write pathfinding test
+
+  // -- gather --
 
   "A drone that is gathering" should "accumulate scrap at a rate of 1 scrap per turn" in {
     val scrapTarget = 10
@@ -72,6 +76,25 @@ class DroneSpec extends FlatSpec {
     world = world.process()
     assert(world.drones.head.state.state == Idle())
   }
+
+  // -- deposit --
+
+  "A drone with scrap that tries to deposit" should "deposit one scrap per turn" in {
+    val startingScrap = 5
+    val world = World(Seq(Drone(Geo(), State[DroneState](Deposit()), Queue(), startingScrap)),
+      Seq(Structure()))
+    val processedWorld = world.process()
+    assert(startingScrap - processedWorld.drones.head.scrap == 1)
+  }
+
+  "A drone without scrap that tries to deposit" should "not deposit anything" in {
+    val world = World(Seq(Drone(Geo(), State[DroneState](Deposit()), Queue(), 0)),
+      Seq(Structure()))
+    val processedWorld = world.process()
+    assert(processedWorld.drones.head.scrap == 0)
+  }
+
+  // -- self-destruct --
 
   "An imminently self-destructing drone" should "properly report its imminint destruction" in {
     val drone = Drone(Geo(), State[DroneState](SelfDestruct()))
@@ -117,6 +140,8 @@ class DroneSpec extends FlatSpec {
     for(_ <- 1 to Drone.explosionTime + 1) world = world.process()
     assert(world.structures.head.scrap == Drone.explosionRemainder * drones.length)
   }
+
+  // -- queue --
 
   "A drone that enqueues a non-idle action" should "add that action to its action queue" in {
     val drone = Drone()

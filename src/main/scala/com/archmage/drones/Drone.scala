@@ -16,7 +16,7 @@ final case class Drone(geo: Geo = Geo(),
       if(queue.nonEmpty) {
         val nextAction = queue.dequeue
         // act on the new action!
-        Drone(geo, newState(nextAction._1, world), nextAction._2).act(world)
+        Drone(geo, Drone.state(nextAction._1, world), nextAction._2).act(world)
       }
       else this
     }
@@ -25,6 +25,7 @@ final case class Drone(geo: Geo = Geo(),
       case Idle() => this
       case Move(_, _) => move(world)
       case Gather() => validateGather(world)
+      case Deposit() => validateDeposit(world)
       case SelfDestruct() => this
     }
   }
@@ -32,6 +33,10 @@ final case class Drone(geo: Geo = Geo(),
   def enqueue(state: DroneState): Drone = {
     if(state == Idle()) this
     else Drone(geo, this.state, queue.enqueue(state), scrap)
+  }
+
+  def changeState(state: DroneState, world: World): Drone = {
+    Drone(geo, Drone.state(state, world), queue, scrap)
   }
 
   private def move(world: World): Drone = {
@@ -42,22 +47,29 @@ final case class Drone(geo: Geo = Geo(),
         val dxpos = geo.xpos + dxvel
         val dypos = geo.ypos + dyvel
         val stop = dxpos == x && dypos == y
-        Drone(Geo(dxpos, dypos, dxvel, dyvel), if(stop) Drone.newState(Idle(), world) else state, queue, scrap)
+        Drone(Geo(dxpos, dypos, dxvel, dyvel), if(stop) Drone.state(Idle(), world) else state, queue, scrap)
       case _ => this
     }
   }
 
   def validateGather(world: World): Drone = {
     val structures = world.structures.filter(s => s.geo == Geo(geo.xpos, geo.ypos))
-    if(structures.isEmpty || structures.head.scrap <= 0) {
-      Drone(geo, Drone.newState(Idle(), world), queue, scrap)
-    }
+    if(structures.isEmpty || structures.head.scrap <= 0) changeState(Idle(), world)
     else this
+  }
+
+  def validateDeposit(world: World): Drone = {
+    if (scrap <= 0) changeState(Idle(), world)
+    else {
+      val structures = world.structures.filter(s => s.geo == Geo(geo.xpos, geo.ypos))
+      if (structures.isEmpty) changeState(Idle(), world)
+      else this
+    }
   }
 
   // used by World.gather
   def gather(world: World, done: Boolean): Drone = {
-    Drone(geo, if(done) Drone.newState(Idle(), world) else state, queue, scrap + 1)
+    Drone(geo, if(done) Drone.state(Idle(), world) else state, queue, scrap + 1)
   }
 
   def isAboutToExplode(world: World): Boolean = {
@@ -74,9 +86,10 @@ object Drone {
   case class Idle() extends DroneState
   case class Move(x: Int, y: Int) extends DroneState
   case class Gather() extends DroneState
+  case class Deposit() extends DroneState
   case class SelfDestruct() extends DroneState
 
-  def newState(state: DroneState, world: World): State[DroneState] = {
+  def state(state: DroneState, world: World): State[DroneState] = {
     State[state.type](state, world.clock)
   }
 }

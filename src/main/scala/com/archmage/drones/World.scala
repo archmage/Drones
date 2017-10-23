@@ -1,7 +1,5 @@
 package com.archmage.drones
 
-import com.archmage.drones.components.Geo
-
 final case class World(drones: Seq[Drone] = Seq(),
                        structures: Seq[Structure] = Seq(),
                        clock: Int = 0) {
@@ -14,56 +12,29 @@ final case class World(drones: Seq[Drone] = Seq(),
     // drone processing
     val newDrones = drones.map((d) => d.act(this))
 
-    World(newDrones, structures, clock).gather.explodeDrones.incrementClock
+    World(newDrones, structures, clock).deposit.gather.explodeDrones.incrementClock
   }
 
   def incrementClock: World = World(drones, structures, clock + 1)
 
   // drones explode
   def explodeDrones: World = {
-    // separate drones into two groups!
-    val (explodingDrones, otherDrones) = drones.partition((d) => d.isAboutToExplode(this))
-
-    if(explodingDrones.isEmpty) return this
-
-    // get the coordinates of each exploding location
-    val locations = explodingDrones.map((d) => d.geo.novel).distinct
-    // get relevant / irrelevant structures
-    val (nearbyStructures, otherStructures) = structures.partition((s) => locations.contains(s.geo))
-
-    // group drones / structures by location
-    val explodeGroups = locations.map((l) => {
-      (explodingDrones.filter((d) => d.geo.novel == l),
-        nearbyStructures.find((s) => s.geo == l).getOrElse(Structure(l)))
-    })
-
-    // explode!
-    val resultingStructures = explodeGroups.map((g) => {
+    val partitionCriteria: (Drone) => Boolean = (d) => d.isAboutToExplode(this)
+    val process: ((Seq[Drone], Structure)) => ((Seq[Drone], Structure)) = (g) => {
       // calculate total of scrap held by exploding drones
       val scrapSum = g._1.foldLeft(0) { (z, i) => z + i.scrap }
-      Structure(g._2.geo, g._2.scrap + scrapSum + g._1.length * Drone.explosionRemainder)
-    })
+      (Seq(), Structure(g._2.geo, g._2.scrap + scrapSum + g._1.length * Drone.explosionRemainder))
+    }
+    val structureIfNone = Structure()
 
-    // and the resulting world...
-    World(otherDrones, resultingStructures ++ otherStructures, clock)
+    dronesInteractWithStructures(partitionCriteria, process, structureIfNone)
   }
 
   // this will break HARD if two structures are in the same place, so...
   // don't do that, I guess!
   def gather: World = {
-    // partition gathering / nongathering drones
-    val (gatherDrones, otherDrones) = drones.partition((d) => d.state.state == Drone.Gather())
-
-    if(gatherDrones.isEmpty) return this
-
-    // get the coordinates of each gathering location
-    val locations = gatherDrones.map((d) => Geo(d.geo.xpos, d.geo.ypos)).distinct
-    // get all gathered / nongathered structures
-    val (gatherStructures, otherStructures) = structures.partition((s) => locations.contains(s.geo))
-    // pair each set of drones and each structure in tuples
-    val gatherGroups = gatherStructures.map((s) => (gatherDrones.filter((d) => d.geo == s.geo), s))
-    // for each pair, gather appropriately!
-    val processedGroups = gatherGroups.map((g) => {
+    val partitionCriteria: (Drone) => Boolean = (d) => d.state.state == Drone.Gather()
+    val process: ((Seq[Drone], Structure)) => ((Seq[Drone], Structure)) = (g) => {
       val remainder = g._2.scrap - g._1.length
       // every drone gets to gather if there's enough scrap
       if(remainder >= 0) {
@@ -78,9 +49,54 @@ final case class World(drones: Seq[Drone] = Seq(),
         (luckyDrones.map((d) => d.gather(this, true)) ++ g._1.slice(luckyDroneCount, g._1.length),
           Structure(g._2.geo))
       }
-    })
+    }
 
-    // finally, rejoin the gathering and non-gathering drones
+    dronesInteractWithStructures(partitionCriteria, process)
+  }
+
+  def deposit: World = {
+    val partitionCriteria: (Drone) => Boolean = (d) => d.state.state == Drone.Deposit()
+    val process: ((Seq[Drone], Structure)) => ((Seq[Drone], Structure)) = (g) => {
+      val processedDrones = g._1.map((d) => Drone(d.geo, d.state, d.queue, d.scrap - 1))
+      (processedDrones, Structure(g._2.geo, g._2.scrap + processedDrones.length))
+    }
+
+    dronesInteractWithStructures(partitionCriteria, process)
+  }
+
+  /** helper function to assist with drone : structure operations */
+  private def dronesInteractWithStructures(partitionCriteria: (Drone) => Boolean,
+    process: ((Seq[Drone], Structure)) => ((Seq[Drone], Structure)),
+    structureIfNone: Structure = null): World = {
+    // split drones based on partition criteria
+    val (selectedDrones, otherDrones) = drones.partition(partitionCriteria)
+
+    // if no selected drones, return this
+    if(selectedDrones.isEmpty) return this
+
+    // get the coordinates of each gathering location
+    val locations = selectedDrones.map((d) => d.geo.novel).distinct
+    // get all selected / unselected structures
+    val (selectedStructures, otherStructures) = structures.partition((s) => locations.contains(s.geo))
+    // pair each set of drones and each structure in tuples
+
+    // if acting on no structure is okay...
+    val selectedGroups = if(structureIfNone != null) {
+      // map off location and provide structureIfNone if none
+      locations.map((l) => {
+        (selectedDrones.filter((d) => d.geo.novel == l),
+          selectedStructures.find((s) => s.geo == l).getOrElse(structureIfNone.withLocation(l)))
+      })
+    }
+    else {
+      // otherwise map off selected structures!
+      selectedStructures.map((s) => (selectedDrones.filter((d) => d.geo.novel == s.geo), s))
+    }
+
+    // for each pair, process appropriately!
+    val processedGroups = selectedGroups.map(process)
+
+    // finally, rejoin the selected and unselected drones
     val processedDrones = processedGroups.flatMap((g) => g._1)
     val processedStructures = processedGroups.map((g) => g._2)
 
