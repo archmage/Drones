@@ -4,11 +4,16 @@ import com.archmage.drones.Drone._
 import com.archmage.drones.components.{Geo, State}
 import org.scalatest.FlatSpec
 
+import scala.collection.immutable.Queue
+
 class DroneSpec extends FlatSpec {
 
+  // -- move --
+
   "An idle drone" should "stay at its location after idling for a turn" in {
-    val world = World(Seq(Drone())).process()
-    assert(world.drones.head.geo == Geo())
+    val world = World(Seq(Drone()))
+    val processedWorld = world.process()
+    assert(processedWorld.drones.head.geo == world.drones.head.geo)
   }
 
   "A drone with a move target" should "move to that target at a rate of up to 1 per axis per turn" in {
@@ -32,6 +37,8 @@ class DroneSpec extends FlatSpec {
 
   // TODO write pathfinding test
 
+  // -- gather --
+
   "A drone that is gathering" should "accumulate scrap at a rate of 1 scrap per turn" in {
     val scrapTarget = 10
     val drone = Drone(Geo(), State[DroneState](Gather()))
@@ -47,7 +54,7 @@ class DroneSpec extends FlatSpec {
     val structure = Structure(Geo(), startingScrap)
     var world = World(Seq(drone, drone), Seq(structure))
     for(_ <- 0 to startingScrap / 2) world = world.process()
-    val drone1 = world.drones(0)
+    val drone1 = world.drones.head
     val drone2 = world.drones(1)
     assert((drone1.scrap, drone2.scrap) == (startingScrap / 2 + 1, startingScrap / 2))
   }
@@ -70,11 +77,30 @@ class DroneSpec extends FlatSpec {
     assert(world.drones.head.state.state == Idle())
   }
 
+  // -- deposit --
+
+  "A drone with scrap that tries to deposit" should "deposit one scrap per turn" in {
+    val startingScrap = 5
+    val world = World(Seq(Drone(Geo(), State[DroneState](Deposit()), Queue(), startingScrap)),
+      Seq(Structure()))
+    val processedWorld = world.process()
+    assert(startingScrap - processedWorld.drones.head.scrap == 1)
+  }
+
+  "A drone without scrap that tries to deposit" should "not deposit anything" in {
+    val world = World(Seq(Drone(Geo(), State[DroneState](Deposit()), Queue(), 0)),
+      Seq(Structure()))
+    val processedWorld = world.process()
+    assert(processedWorld.drones.head.scrap == 0)
+  }
+
+  // -- self-destruct --
+
   "An imminently self-destructing drone" should "properly report its imminint destruction" in {
     val drone = Drone(Geo(), State[DroneState](SelfDestruct()))
     var world = World(Seq(drone))
     for(_ <- 1 to Drone.explosionTime) world = world.process()
-    assert(world.drones.headOption.isDefined && world.drones.head.isAboutToExplode(world))
+    assert(world.drones.nonEmpty && world.drones.head.isAboutToExplode(world))
   }
 
   "A self-destructed drone" should "be removed from the world's drone list" in {
@@ -86,7 +112,7 @@ class DroneSpec extends FlatSpec {
 
   "A self-destructing drone" should "increase its local structure's scrap count" in {
     val drone = Drone(Geo(), State[DroneState](SelfDestruct()))
-    var structure = Structure(Geo())
+    val structure = Structure(Geo())
     var world = World(Seq(drone), Seq(structure))
     for(_ <- 1 to Drone.explosionTime + 1) world = world.process()
     assert(world.structures.head.scrap == Drone.explosionRemainder)
@@ -100,7 +126,7 @@ class DroneSpec extends FlatSpec {
   }
 
   "A self-destructing drone carrying scrap" should "add its scrap to its structure" in {
-    val drone = Drone(Geo(), State[DroneState](SelfDestruct()), 20)
+    val drone = Drone(Geo(), State[DroneState](SelfDestruct()), Queue(), 20)
     val structure = Structure(Geo(), 10)
     var world = World(Seq(drone), Seq(structure))
     for(_ <- 1 to Drone.explosionTime + 1) world = world.process()
@@ -113,5 +139,26 @@ class DroneSpec extends FlatSpec {
     var world = World(drones, Seq(structure))
     for(_ <- 1 to Drone.explosionTime + 1) world = world.process()
     assert(world.structures.head.scrap == Drone.explosionRemainder * drones.length)
+  }
+
+  // -- queue --
+
+  "A drone that enqueues a non-idle action" should "add that action to its action queue" in {
+    val drone = Drone()
+    val droneAfterEnqueue = drone.enqueue(Move(10, 10))
+    assert(droneAfterEnqueue.queue.length - drone.queue.length == 1)
+  }
+
+  "A drone that enqueues an idle action" should "not add that action to its queue" in {
+    val drone = Drone()
+    val droneAfterEnqueue = drone.enqueue(Idle())
+    assert(droneAfterEnqueue.queue.length - drone.queue.length == 0)
+  }
+
+  "An idle drone that enqueues a non-idle action" should "perform that action" in {
+    val stateToEnqueue = Move(10, 10)
+    val drone = Drone(Geo(), State(Idle()), Queue(stateToEnqueue))
+    val world = World(Seq(drone)).process()
+    assert(world.drones.head.state.state == stateToEnqueue)
   }
 }
