@@ -20,23 +20,22 @@ final case class World(drones: Map[Int, Drone] = Map(),
 
   private def incrementClock: World = World(drones, structures, clock + 1)
 
-  // double definition nonsense
-  /*
-  private def add(newDrones: Drone*): World = {
+  def addDrones(newDrones: Drone*): World = {
     if(newDrones.isEmpty) return this
+    // some bug here that makes appending to the map malfunction
     def appendDrone(newDrones: Seq[Drone], existingDrones: Map[Int, Drone]): Map[Int, Drone] = {
       if(newDrones.isEmpty) return existingDrones
-      val id = (0 until existingDrones.size).find(existingDrones.contains).getOrElse(drones.size)
+      // probably here
+      val id = (1 until existingDrones.size).find(existingDrones.contains).getOrElse(existingDrones.size + 1)
       appendDrone(newDrones.tail, existingDrones + (id -> newDrones.head))
     }
     World(appendDrone(newDrones, drones), structures, clock)
   }
 
-  private def add(newStructures: Structure*): World = {
+  def addStructures(newStructures: Structure*): World = {
     if(newStructures.isEmpty) return this
     World(drones, structures ++ newStructures, clock)
   }
-  */
 
   // drones explode
   private def explodeDrones: World = {
