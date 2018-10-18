@@ -10,4 +10,4 @@ The game's interactions are designed to be standardised through function calls. 
 
 # Status
 
-Drones is currently _in progress_! A rewrite to use functional programming and unit testing is underway.
+Progress on Drones is currently suspended.
